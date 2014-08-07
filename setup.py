@@ -8,7 +8,7 @@ setup(
   author = 'Travis DeWolf',
   author_email = 'travis.dewolf@gmail.com',
   url = 'https://github.com/studywolf/pydmps',
-  download_url = 'https://github.com/studywolf/pydmps/tarball/0.1'
+  download_url = 'https://github.com/studywolf/pydmps/tarball/0.1',
   keywords = ['dmps', 'trajectory generation', 'control'],
   classifiers = [],
 )
