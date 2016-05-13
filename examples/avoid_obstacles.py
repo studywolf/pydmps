@@ -79,8 +79,6 @@ for goal in goals:
         plot_obs, = plt.plot(obstacle[0], obstacle[1], 'rx', mew=3)
     plot_path, = plt.plot(y_track[:,0], y_track[:, 1], 'b', lw=2)
     plt.title('DMP system - obstacle avoidance')
-    plt.xlabel('time (ms)')
-    plt.ylabel('system trajectory')
 
 plt.axis('equal')
 plt.xlim([-1.1,1.1])
