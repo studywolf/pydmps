@@ -34,8 +34,8 @@ def avoid_obstacles(y, dy, goal):
     for obstacle in obstacles:
         # based on (Hoffmann, 2009)
 
-        # if we're moving and we're not at the target
-        if (np.linalg.norm(dy) * np.linalg.norm(obstacle - y)) > 1e-5:
+        # if we're moving
+        if np.linalg.norm(dy) > 1e-5:
 
             # get the angle we're heading in
             phi_dy = -np.arctan2(dy[1], dy[0]) 
