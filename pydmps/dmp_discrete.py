@@ -149,7 +149,7 @@ if __name__ == "__main__":
     path1 = np.sin(np.arange(0,1,.01)*5)
     # a strange path to target
     path2 = np.zeros(path1.shape)
-    path2[(len(path2) / 2.):] = .5 
+    path2[int(len(path2) / 2.):] = .5 
 
     for ii, bfs in enumerate(num_bfs):
         dmp = DMPs_discrete(dmps=2, bfs=bfs)

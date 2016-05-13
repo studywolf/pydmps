@@ -177,7 +177,7 @@ class DMPs(object):
         self.ddy = np.zeros(self.dmps)  
         self.cs.reset_state()
 
-    def step(self, tau=1.0, state_fb=None):
+    def step(self, tau=1.0, state_fb=None, external_force=None):
         """Run the DMP system for a single timestep.
 
        tau float: scales the timestep
@@ -208,6 +208,8 @@ class DMPs(object):
             self.ddy[d] = (self.ay[d] * 
                      (self.by[d] * (self.goal[d] - self.y[d]) - \
                      self.dy[d]/tau) + f) * tau
+            if external_force is not None:
+                self.ddy[d] += external_force[d]
             self.dy[d] += self.ddy[d] * tau * self.dt * cs_args['error_coupling']
             self.y[d] += self.dy[d] * self.dt * cs_args['error_coupling']
 
