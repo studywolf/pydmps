@@ -18,12 +18,13 @@ import numpy as np
 
 from cs import CanonicalSystem
 
+
 class DMPs(object):
-    """Implementation of Dynamic Motor Primitives, 
+    """Implementation of Dynamic Motor Primitives,
     as described in Dr. Stefan Schaal's (2002) paper."""
 
     def __init__(self, dmps, bfs, dt=.01,
-                 y0=0, goal=1, w=None, 
+                 y0=0, goal=1, w=None,
                  ay=None, by=None, **kwargs):
         """
         dmps int: number of dynamic motor primitives
@@ -36,26 +37,24 @@ class DMPs(object):
         by int: gain on attractor term y dynamics
         """
 
-        self.dmps = dmps 
-        self.bfs = bfs 
+        self.dmps = dmps
+        self.bfs = bfs
         self.dt = dt
         if isinstance(y0, (int, float)):
-            y0 = np.ones(self.dmps)*y0 
+            y0 = np.ones(self.dmps)*y0
         self.y0 = y0
         if isinstance(goal, (int, float)):
             goal = np.ones(self.dmps)*goal
-        self.goal = goal 
-        if w is None: 
+        self.goal = goal
+        if w is None:
             # default is f = 0
             w = np.zeros((self.dmps, self.bfs))
         self.w = w
 
-        if ay is None: ay = np.ones(dmps) * 25. # Schaal 2012
-        self.ay = ay
-        if by is None: by = self.ay.copy() / 4. # Schaal 2012
-        self.by = by
+        self.ay = np.ones(dmps) * 25. if ay is None else ay  # Schaal 2012
+        self.by = self.ay / 4. if by is None else by  # Schaal 2012
 
-        # set up the CS 
+        # set up the CS
         self.cs = CanonicalSystem(dt=self.dt, **kwargs)
         self.timesteps = int(self.cs.run_time / self.dt)
 
@@ -70,29 +69,33 @@ class DMPs(object):
             if (self.y0[d] == self.goal[d]):
                 self.goal[d] += 1e-4
 
-    def gen_front_term(self, x, dmp_num): raise NotImplementedError()
-    
-    def gen_goal(self, y_des): raise NotImplementedError()
+    def gen_front_term(self, x, dmp_num):
+        raise NotImplementedError()
 
-    def gen_psi(self): raise NotImplementedError()
+    def gen_goal(self, y_des):
+        raise NotImplementedError()
 
-    def gen_weights(self, f_target): raise NotImplementedError()
+    def gen_psi(self):
+        raise NotImplementedError()
+
+    def gen_weights(self, f_target):
+        raise NotImplementedError()
 
     def imitate_path(self, y_des):
-        """Takes in a desired trajectory and generates the set of 
+        """Takes in a desired trajectory and generates the set of
         system parameters that best realize this path.
-    
+
         y_des list/array: the desired trajectories of each DMP
                           should be shaped [dmps, run_time]
         """
 
         # set initial state and goal
-        if y_des.ndim == 1: 
-            y_des = y_des.reshape(1,len(y_des))
-        self.y0 = y_des[:,0].copy()
+        if y_des.ndim == 1:
+            y_des = y_des.reshape(1, len(y_des))
+        self.y0 = y_des[:, 0].copy()
         self.y_des = y_des.copy()
         self.goal = self.gen_goal(y_des)
-        
+
         self.check_offset()
 
         # generate function to interpolate the desired trajectory
@@ -101,7 +104,7 @@ class DMPs(object):
         x = np.linspace(0, self.cs.run_time, y_des.shape[1])
         for d in range(self.dmps):
             path_gen = scipy.interpolate.interp1d(x, y_des[d])
-            for t in range(self.timesteps):  
+            for t in range(self.timesteps):
                 path[d, t] = path_gen(t * self.dt)
         y_des = path
 
@@ -118,9 +121,9 @@ class DMPs(object):
         f_target = np.zeros((y_des.shape[1], self.dmps))
         # find the force required to move along this trajectory
         for d in range(self.dmps):
-            f_target[:,d] = ddy_des[d] - self.ay[d] * \
-                            (self.by[d] * (self.goal[d] - y_des[d]) - \
-                            dy_des[d])
+            f_target[:, d] = (ddy_des[d] - self.ay[d] *
+                              (self.by[d] * (self.goal[d] - y_des[d]) -
+                              dy_des[d]))
 
         # efficiently generate weights to realize f_target
         self.gen_weights(f_target)
@@ -149,18 +152,18 @@ class DMPs(object):
         self.reset_state()
 
         if timesteps is None:
-            if kwargs.has_key('tau'):
+            if 'tau' in kwargs:
                 timesteps = int(self.timesteps / kwargs['tau'])
-            else: 
+            else:
                 timesteps = self.timesteps
 
         # set up tracking vectors
-        y_track = np.zeros((timesteps, self.dmps)) 
+        y_track = np.zeros((timesteps, self.dmps))
         dy_track = np.zeros((timesteps, self.dmps))
         ddy_track = np.zeros((timesteps, self.dmps))
-    
+
         for t in range(timesteps):
-        
+
             y, dy, ddy = self.step(**kwargs)
 
             # record timestep
@@ -173,27 +176,21 @@ class DMPs(object):
     def reset_state(self):
         """Reset the system state"""
         self.y = self.y0.copy()
-        self.dy = np.zeros(self.dmps)   
-        self.ddy = np.zeros(self.dmps)  
+        self.dy = np.zeros(self.dmps)
+        self.ddy = np.zeros(self.dmps)
         self.cs.reset_state()
 
-    def step(self, tau=1.0, state_fb=None, external_force=None):
+    def step(self, tau=1.0, error=0.0, external_force=None):
         """Run the DMP system for a single timestep.
 
        tau float: scales the timestep
                   increase tau to make the system execute faster
-       state_fb np.array: optional system feedback
+       error float: optional system feedback
         """
 
+        error_coupling = 1.0 / (1.0 + error)
         # run canonical system
-        cs_args = {'tau':tau,
-                   'error_coupling':1.0}
-        if state_fb is not None: 
-            # take the 2 norm of the overall error
-            state_fb = state_fb.reshape(1,self.dmps)
-            dist = np.sqrt(np.sum((state_fb - self.y)**2))
-            cs_args['error_coupling'] = 1.0 / (1.0 + 10*dist)
-        x = self.cs.step(**cs_args)
+        x = self.cs.step(tau=tau, error_coupling=error_coupling)
 
         # generate basis function activation
         psi = self.gen_psi(x)
@@ -201,17 +198,16 @@ class DMPs(object):
         for d in range(self.dmps):
 
             # generate the forcing term
-            f = self.gen_front_term(x, d) * \
-                (np.dot(psi, self.w[d])) / np.sum(psi)
+            f = (self.gen_front_term(x, d) *
+                 (np.dot(psi, self.w[d])) / np.sum(psi))
 
             # DMP acceleration
-            self.ddy[d] = (self.ay[d] * 
-                     (self.by[d] * (self.goal[d] - self.y[d]) - \
-                     self.dy[d]/tau) + f) * tau
+            self.ddy[d] = (self.ay[d] *
+                           (self.by[d] * (self.goal[d] - self.y[d]) -
+                           self.dy[d]/tau) + f) * tau
             if external_force is not None:
                 self.ddy[d] += external_force[d]
-            self.dy[d] += self.ddy[d] * tau * self.dt * cs_args['error_coupling']
-            self.y[d] += self.dy[d] * self.dt * cs_args['error_coupling']
+            self.dy[d] += self.ddy[d] * tau * self.dt * error_coupling
+            self.y[d] += self.dy[d] * self.dt * error_coupling
 
         return self.y, self.dy, self.ddy
-
