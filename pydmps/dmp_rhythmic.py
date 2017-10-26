@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from dmp import DMPs
+from pydmps.dmp import DMPs
 
 import numpy as np
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     path1 = np.sin(np.arange(0, 2*np.pi, .01)*5)
     # a strange path to target
     path2 = np.zeros(path1.shape)
-    path2[(len(path2) / 2.):] = .5
+    path2[int(len(path2) / 2.):] = .5
 
     for ii, bfs in enumerate(n_bfs):
         dmp = DMPs_rhythmic(n_dmps=2, n_bfs=bfs)
