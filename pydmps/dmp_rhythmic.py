@@ -34,7 +34,7 @@ class DMPs_rhythmic(DMPs):
 
         # set variance of Gaussian basis functions
         # trial and error to find this spacing
-        self.h = np.ones(self.bfs) * self.bfs  # 1.75
+        self.h = np.ones(self.n_bfs) * self.n_bfs  # 1.75
 
         self.check_offset()
 
@@ -42,7 +42,7 @@ class DMPs_rhythmic(DMPs):
         """Set the centre of the Gaussian basis
         functions be spaced evenly throughout run time"""
 
-        c = np.linspace(0, 2*np.pi, self.bfs+1)
+        c = np.linspace(0, 2*np.pi, self.n_bfs+1)
         c = c[0:-1]
         self.c = c
 
@@ -67,8 +67,8 @@ class DMPs_rhythmic(DMPs):
         y_des np.array: the desired trajectory to follow
         """
 
-        goal = np.zeros(self.dmps)
-        for n in range(self.dmps):
+        goal = np.zeros(self.n_dmps)
+        for n in range(self.n_dmps):
             num_idx = ~np.isnan(y_des[n])  # ignore nan's when calculating goal
             goal[n] = .5 * (y_des[n, num_idx].min() +
                             y_des[n, num_idx].max())
@@ -98,8 +98,8 @@ class DMPs_rhythmic(DMPs):
         psi_track = self.gen_psi(x_track)
 
         # efficiently calculate BF weights using weighted linear regression
-        for d in range(self.dmps):
-            for b in range(self.bfs):
+        for d in range(self.n_dmps):
+            for b in range(self.n_bfs):
                 self.w[d, b] = (np.dot(psi_track[:, b], f_target[:, d]) /
                                 (np.sum(psi_track[:, b]) + 1e-10))
 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # test normal run
-    dmp = DMPs_rhythmic(dmps=1, bfs=10, w=np.zeros((1, 10)))
+    dmp = DMPs_rhythmic(n_dmps=1, n_bfs=10, w=np.zeros((1, 10)))
     y_track, dy_track, ddy_track = dmp.rollout()
 
     plt.figure(1, figsize=(6, 3))
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     # test imitation of path run
     plt.figure(2, figsize=(6, 4))
-    num_bfs = [10, 30, 50, 100, 10000]
+    n_bfs = [10, 30, 50, 100, 10000]
 
     # a straight line to target
     path1 = np.sin(np.arange(0, 2*np.pi, .01)*5)
@@ -133,8 +133,8 @@ if __name__ == "__main__":
     path2 = np.zeros(path1.shape)
     path2[(len(path2) / 2.):] = .5
 
-    for ii, bfs in enumerate(num_bfs):
-        dmp = DMPs_rhythmic(dmps=2, bfs=bfs)
+    for ii, bfs in enumerate(n_bfs):
+        dmp = DMPs_rhythmic(n_dmps=2, n_bfs=bfs)
 
         dmp.imitate_path(y_des=np.array([path1, path2]))
         y_track, dy_track, ddy_track = dmp.rollout()
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     plt.title('DMP imitate path')
     plt.xlabel('time (ms)')
     plt.ylabel('system trajectory')
-    plt.legend(['%i BFs' % i for i in num_bfs], loc='lower right')
+    plt.legend(['%i BFs' % i for i in n_bfs], loc='lower right')
 
     plt.tight_layout()
     plt.show()

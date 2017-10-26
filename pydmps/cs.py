@@ -21,13 +21,14 @@ class CanonicalSystem():
     """Implementation of the canonical dynamical system
     as described in Dr. Stefan Schaal's (2002) paper"""
 
-    def __init__(self, dt, pattern='discrete'):
+    def __init__(self, dt, ax=1.0, pattern='discrete'):
         """Default values from Schaal (2012)
 
         dt float: the timestep
+        ax float: a gain term on the dynamical system
         pattern string: either 'discrete' or 'rhythmic'
         """
-        self.ax = 1.0
+        self.ax = ax
 
         self.pattern = pattern
         if pattern == 'discrete':

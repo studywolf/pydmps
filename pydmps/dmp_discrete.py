@@ -34,7 +34,7 @@ class DMPs_discrete(DMPs):
 
         # set variance of Gaussian basis functions
         # trial and error to find this spacing
-        self.h = np.ones(self.bfs) * self.bfs**1.5 / self.c
+        self.h = np.ones(self.n_bfs) * self.n_bfs**1.5 / self.c / self.cs.ax
 
         self.check_offset()
 
@@ -45,23 +45,19 @@ class DMPs_discrete(DMPs):
         '''x_track = self.cs.discrete_rollout()
         t = np.arange(len(x_track))*self.dt
         # choose the points in time we'd like centers to be at
-        c_des = np.linspace(0, self.cs.run_time, self.bfs)
+        c_des = np.linspace(0, self.cs.run_time, self.n_bfs)
         self.c = np.zeros(len(c_des))
         for ii, point in enumerate(c_des):
             diff = abs(t - point)
             self.c[ii] = x_track[np.where(diff == min(diff))[0][0]]'''
 
-        # desired spacings along x
-        # need to be spaced evenly between 1 and exp(-ax)
-        # lowest number should be only as far as x gets
-        first = np.exp(-self.cs.ax*self.cs.run_time)
-        last = 1.05 - first
-        des_c = np.linspace(first, last, self.bfs)
+        # desired activations throughout time
+        des_c = np.linspace(0, self.cs.run_time, self.n_bfs)
 
         self.c = np.ones(len(des_c))
         for n in range(len(des_c)):
-            # x = exp(-c), solving for c
-            self.c[n] = -np.log(des_c[n])
+            # finding x for desired times t
+            self.c[n] = np.exp(-self.cs.ax * des_c[n])
 
     def gen_front_term(self, x, dmp_num):
         """Generates the diminishing front term on
@@ -105,14 +101,15 @@ class DMPs_discrete(DMPs):
         psi_track = self.gen_psi(x_track)
 
         # efficiently calculate BF weights using weighted linear regression
-        self.w = np.zeros((self.dmps, self.bfs))
-        for d in range(self.dmps):
+        self.w = np.zeros((self.n_dmps, self.n_bfs))
+        for d in range(self.n_dmps):
             # spatial scaling term
             k = (self.goal[d] - self.y0[d])
-            for b in range(self.bfs):
+            for b in range(self.n_bfs):
                 numer = np.sum(x_track * psi_track[:, b] * f_target[:, d])
                 denom = np.sum(x_track**2 * psi_track[:, b])
                 self.w[d, b] = numer / (k * denom)
+        self.w = np.nan_to_num(self.w)
 
 # ==============================
 # Test code
@@ -121,7 +118,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # test normal run
-    dmp = DMPs_discrete(dmps=1, bfs=10, w=np.zeros((1, 10)))
+    dmp = DMPs_discrete(dt=.05, n_dmps=1, n_bfs=10, w=np.zeros((1, 10)))
     y_track, dy_track, ddy_track = dmp.rollout()
 
     plt.figure(1, figsize=(6, 3))
@@ -135,7 +132,7 @@ if __name__ == "__main__":
 
     # test imitation of path run
     plt.figure(2, figsize=(6, 4))
-    num_bfs = [10, 30, 50, 100, 10000]
+    n_bfs = [10, 30, 50, 100, 10000]
 
     # a straight line to target
     path1 = np.sin(np.arange(0, 1, .01)*5)
@@ -143,8 +140,8 @@ if __name__ == "__main__":
     path2 = np.zeros(path1.shape)
     path2[int(len(path2) / 2.):] = .5
 
-    for ii, bfs in enumerate(num_bfs):
-        dmp = DMPs_discrete(dmps=2, bfs=bfs)
+    for ii, bfs in enumerate(n_bfs):
+        dmp = DMPs_discrete(n_dmps=2, n_bfs=bfs)
 
         dmp.imitate_path(y_des=np.array([path1, path2]))
         # change the scale of the movement
@@ -170,7 +167,7 @@ if __name__ == "__main__":
     plt.title('DMP imitate path')
     plt.xlabel('time (ms)')
     plt.ylabel('system trajectory')
-    plt.legend(['%i BFs' % i for i in num_bfs], loc='lower right')
+    plt.legend(['%i BFs' % i for i in n_bfs], loc='lower right')
 
     plt.tight_layout()
     plt.show()
