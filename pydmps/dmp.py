@@ -167,12 +167,8 @@ class DMPs(object):
 
         for t in range(timesteps):
 
-            y, dy, ddy = self.step(**kwargs)
-
-            # record timestep
-            y_track[t] = y
-            dy_track[t] = dy
-            ddy_track[t] = ddy
+            # run and record timestep
+            y_track[t], dy_track[t], ddy_track[t] = self.step(**kwargs)
 
         return y_track, dy_track, ddy_track
 
