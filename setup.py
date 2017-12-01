@@ -10,7 +10,7 @@ except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()
 
-from setuptools import find_packages, setup  
+from setuptools import find_packages, setup
 
 
 def read(*filenames, **kwargs):
@@ -24,13 +24,13 @@ def read(*filenames, **kwargs):
 
 setup(
   name = 'pydmps',
-  packages = ['pydmps'], 
-  version = '0.1',
+  packages = ['pydmps'],
+  version = '0.2',
   description = 'Python implementation of Dynamic Movement Primitives (DMPs)',
   author = 'Travis DeWolf',
   author_email = 'travis.dewolf@gmail.com',
   url = 'https://github.com/studywolf/pydmps',
-  download_url = 'https://github.com/studywolf/pydmps/tarball/0.1',
+  download_url = 'https://github.com/studywolf/pydmps/tarball/0.2',
   keywords = ['dmps', 'dynamic movement primitives', 'trajectory generation', 'control'],
   classifiers = [],
 )
