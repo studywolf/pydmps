@@ -85,7 +85,7 @@ class DMPs_discrete(DMPs):
         x float, array: the canonical system state or path
         """
 
-        if isinstance(x, np.ndarray):
+        if not np.isscalar(x):
             x = x[:, None]
         return np.exp(-self.h * (x - self.c)**2)
 

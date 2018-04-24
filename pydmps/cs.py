@@ -21,7 +21,7 @@ class CanonicalSystem():
     """Implementation of the canonical dynamical system
     as described in Dr. Stefan Schaal's (2002) paper"""
 
-    def __init__(self, dt, ax=1.0, pattern='discrete'):
+    def __init__(self, dt, x, ax=1.0, pattern='discrete'):
         """Default values from Schaal (2012)
 
         dt float: the timestep
@@ -44,7 +44,7 @@ class CanonicalSystem():
         self.dt = dt
         self.timesteps = int(self.run_time / self.dt)
 
-        self.reset_state()
+        self.x = x
 
     def rollout(self, **kwargs):
         """Generate x for open loop movements.
@@ -55,16 +55,16 @@ class CanonicalSystem():
             timesteps = self.timesteps
         self.x_track = np.zeros(timesteps)
 
-        self.reset_state()
+        self.reset_state(x=1.0)
         for t in range(timesteps):
             self.x_track[t] = self.x
             self.step(**kwargs)
 
         return self.x_track
 
-    def reset_state(self):
+    def reset_state(self, x):
         """Reset the system state"""
-        self.x = 1.0
+        self.x = x
 
     def step_discrete(self, tau=1.0, error_coupling=1.0):
         """Generate a single step of x for discrete

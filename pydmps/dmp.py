@@ -59,7 +59,7 @@ class DMPs(object):
         self.timesteps = int(self.cs.run_time / self.dt)
 
         # set up the DMP system
-        self.reset_state()
+        # self.reset_state()
 
     def check_offset(self):
         """Check to see if initial position and goal are the same
@@ -81,7 +81,7 @@ class DMPs(object):
     def gen_weights(self, f_target):
         raise NotImplementedError()
 
-    def imitate_path(self, y_des, plot=False):
+    def imitate_path(self, y_des, goal=None, plot=False):
         """Takes in a desired trajectory and generates the set of
         system parameters that best realize this path.
 
@@ -94,7 +94,7 @@ class DMPs(object):
             y_des = y_des.reshape(1, len(y_des))
         self.y0 = y_des[:, 0].copy()
         self.y_des = y_des.copy()
-        self.goal = self.gen_goal(y_des)
+        self.goal = self.gen_goal(y_des) if goal is None else goal
 
         self.check_offset()
 
@@ -146,13 +146,13 @@ class DMPs(object):
             plt.tight_layout()
             plt.show()
 
-        self.reset_state()
+        self.reset_state(cs_x=1.0)
         return y_des
 
     def rollout(self, timesteps=None, **kwargs):
         """Generate a system trial, no feedback is incorporated."""
 
-        self.reset_state()
+        self.reset_state(cs_x=1.0)
 
         if timesteps is None:
             if 'tau' in kwargs:
@@ -172,12 +172,12 @@ class DMPs(object):
 
         return y_track, dy_track, ddy_track
 
-    def reset_state(self):
+    def reset_state(self, cs_x=1.0, y=None, dy=None, ddy=None):
         """Reset the system state"""
-        self.y = self.y0.copy()
-        self.dy = np.zeros(self.n_dmps)
-        self.ddy = np.zeros(self.n_dmps)
-        self.cs.reset_state()
+        self.y = np.copy(self.y0) if y is None else np.copy(y)
+        self.dy = np.zeros(self.n_dmps) if dy is None else np.copy(dy)
+        self.ddy = np.zeros(self.n_dmps) if ddy is None else np.copy(ddy)
+        self.cs.reset_state(cs_x)
 
     def step(self, tau=1.0, error=0.0, external_force=None):
         """Run the DMP system for a single timestep.
