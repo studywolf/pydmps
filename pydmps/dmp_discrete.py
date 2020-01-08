@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (C) 2013 Travis DeWolf
 
 This program is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
 from pydmps.dmp import DMPs
 
@@ -28,13 +28,13 @@ class DMPs_discrete(DMPs):
         """
 
         # call super class constructor
-        super(DMPs_discrete, self).__init__(pattern='discrete', **kwargs)
+        super(DMPs_discrete, self).__init__(pattern="discrete", **kwargs)
 
         self.gen_centers()
 
         # set variance of Gaussian basis functions
         # trial and error to find this spacing
-        self.h = np.ones(self.n_bfs) * self.n_bfs**1.5 / self.c / self.cs.ax
+        self.h = np.ones(self.n_bfs) * self.n_bfs ** 1.5 / self.c / self.cs.ax
 
         self.check_offset()
 
@@ -42,14 +42,14 @@ class DMPs_discrete(DMPs):
         """Set the centre of the Gaussian basis
         functions be spaced evenly throughout run time"""
 
-        '''x_track = self.cs.discrete_rollout()
+        """x_track = self.cs.discrete_rollout()
         t = np.arange(len(x_track))*self.dt
         # choose the points in time we'd like centers to be at
         c_des = np.linspace(0, self.cs.run_time, self.n_bfs)
         self.c = np.zeros(len(c_des))
         for ii, point in enumerate(c_des):
             diff = abs(t - point)
-            self.c[ii] = x_track[np.where(diff == min(diff))[0][0]]'''
+            self.c[ii] = x_track[np.where(diff == min(diff))[0][0]]"""
 
         # desired activations throughout time
         des_c = np.linspace(0, self.cs.run_time, self.n_bfs)
@@ -87,7 +87,7 @@ class DMPs_discrete(DMPs):
 
         if isinstance(x, np.ndarray):
             x = x[:, None]
-        return np.exp(-self.h * (x - self.c)**2)
+        return np.exp(-self.h * (x - self.c) ** 2)
 
     def gen_weights(self, f_target):
         """Generate a set of weights over the basis functions such
@@ -104,12 +104,16 @@ class DMPs_discrete(DMPs):
         self.w = np.zeros((self.n_dmps, self.n_bfs))
         for d in range(self.n_dmps):
             # spatial scaling term
-            k = (self.goal[d] - self.y0[d])
+            k = self.goal[d] - self.y0[d]
             for b in range(self.n_bfs):
                 numer = np.sum(x_track * psi_track[:, b] * f_target[:, d])
-                denom = np.sum(x_track**2 * psi_track[:, b])
-                self.w[d, b] = numer / (k * denom)
+                denom = np.sum(x_track ** 2 * psi_track[:, b])
+                self.w[d, b] = numer / denom
+                if abs(k) > 1e-5:
+                    self.w[d, b] /= k
+
         self.w = np.nan_to_num(self.w)
+
 
 # ==============================
 # Test code
@@ -118,16 +122,16 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # test normal run
-    dmp = DMPs_discrete(dt=.05, n_dmps=1, n_bfs=10, w=np.zeros((1, 10)))
+    dmp = DMPs_discrete(dt=0.05, n_dmps=1, n_bfs=10, w=np.zeros((1, 10)))
     y_track, dy_track, ddy_track = dmp.rollout()
 
     plt.figure(1, figsize=(6, 3))
-    plt.plot(np.ones(len(y_track))*dmp.goal, 'r--', lw=2)
+    plt.plot(np.ones(len(y_track)) * dmp.goal, "r--", lw=2)
     plt.plot(y_track, lw=2)
-    plt.title('DMP system - no forcing term')
-    plt.xlabel('time (ms)')
-    plt.ylabel('system trajectory')
-    plt.legend(['goal', 'system state'], loc='lower right')
+    plt.title("DMP system - no forcing term")
+    plt.xlabel("time (ms)")
+    plt.ylabel("system trajectory")
+    plt.legend(["goal", "system state"], loc="lower right")
     plt.tight_layout()
 
     # test imitation of path run
@@ -135,10 +139,10 @@ if __name__ == "__main__":
     n_bfs = [10, 30, 50, 100, 10000]
 
     # a straight line to target
-    path1 = np.sin(np.arange(0, 1, .01)*5)
+    path1 = np.sin(np.arange(0, 1, 0.01) * 5)
     # a strange path to target
     path2 = np.zeros(path1.shape)
-    path2[int(len(path2) / 2.):] = .5
+    path2[int(len(path2) / 2.0) :] = 0.5
 
     for ii, bfs in enumerate(n_bfs):
         dmp = DMPs_discrete(n_dmps=2, n_bfs=bfs)
@@ -157,17 +161,17 @@ if __name__ == "__main__":
         plt.plot(y_track[:, 1], lw=2)
 
     plt.subplot(211)
-    a = plt.plot(path1 / path1[-1] * dmp.goal[0], 'r--', lw=2)
-    plt.title('DMP imitate path')
-    plt.xlabel('time (ms)')
-    plt.ylabel('system trajectory')
-    plt.legend([a[0]], ['desired path'], loc='lower right')
+    a = plt.plot(path1 / path1[-1] * dmp.goal[0], "r--", lw=2)
+    plt.title("DMP imitate path")
+    plt.xlabel("time (ms)")
+    plt.ylabel("system trajectory")
+    plt.legend([a[0]], ["desired path"], loc="lower right")
     plt.subplot(212)
-    b = plt.plot(path2 / path2[-1] * dmp.goal[1], 'r--', lw=2)
-    plt.title('DMP imitate path')
-    plt.xlabel('time (ms)')
-    plt.ylabel('system trajectory')
-    plt.legend(['%i BFs' % i for i in n_bfs], loc='lower right')
+    b = plt.plot(path2 / path2[-1] * dmp.goal[1], "r--", lw=2)
+    plt.title("DMP imitate path")
+    plt.xlabel("time (ms)")
+    plt.ylabel("system trajectory")
+    plt.legend(["%i BFs" % i for i in n_bfs], loc="lower right")
 
     plt.tight_layout()
     plt.show()

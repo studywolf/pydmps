@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (C) 2013 Travis DeWolf
 
 This program is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
 from pydmps.dmp import DMPs
 
@@ -28,7 +28,7 @@ class DMPs_rhythmic(DMPs):
         """
 
         # call super class constructor
-        super(DMPs_rhythmic, self).__init__(pattern='rhythmic', **kwargs)
+        super(DMPs_rhythmic, self).__init__(pattern="rhythmic", **kwargs)
 
         self.gen_centers()
 
@@ -42,7 +42,7 @@ class DMPs_rhythmic(DMPs):
         """Set the centre of the Gaussian basis
         functions be spaced evenly throughout run time"""
 
-        c = np.linspace(0, 2*np.pi, self.n_bfs+1)
+        c = np.linspace(0, 2 * np.pi, self.n_bfs + 1)
         c = c[0:-1]
         self.c = c
 
@@ -70,8 +70,7 @@ class DMPs_rhythmic(DMPs):
         goal = np.zeros(self.n_dmps)
         for n in range(self.n_dmps):
             num_idx = ~np.isnan(y_des[n])  # ignore nan's when calculating goal
-            goal[n] = .5 * (y_des[n, num_idx].min() +
-                            y_des[n, num_idx].max())
+            goal[n] = 0.5 * (y_des[n, num_idx].min() + y_des[n, num_idx].max())
 
         return goal
 
@@ -100,8 +99,9 @@ class DMPs_rhythmic(DMPs):
         # efficiently calculate BF weights using weighted linear regression
         for d in range(self.n_dmps):
             for b in range(self.n_bfs):
-                self.w[d, b] = (np.dot(psi_track[:, b], f_target[:, d]) /
-                                (np.sum(psi_track[:, b]) + 1e-10))
+                self.w[d, b] = np.dot(psi_track[:, b], f_target[:, d]) / (
+                    np.sum(psi_track[:, b]) + 1e-10
+                )
 
 
 # ==============================
@@ -115,12 +115,12 @@ if __name__ == "__main__":
     y_track, dy_track, ddy_track = dmp.rollout()
 
     plt.figure(1, figsize=(6, 3))
-    plt.plot(np.ones(len(y_track))*dmp.goal, 'r--', lw=2)
+    plt.plot(np.ones(len(y_track)) * dmp.goal, "r--", lw=2)
     plt.plot(y_track, lw=2)
-    plt.title('DMP system - no forcing term')
-    plt.xlabel('time (ms)')
-    plt.ylabel('system trajectory')
-    plt.legend(['goal', 'system state'], loc='lower right')
+    plt.title("DMP system - no forcing term")
+    plt.xlabel("time (ms)")
+    plt.ylabel("system trajectory")
+    plt.legend(["goal", "system state"], loc="lower right")
     plt.tight_layout()
 
     # test imitation of path run
@@ -128,10 +128,10 @@ if __name__ == "__main__":
     n_bfs = [10, 30, 50, 100, 10000]
 
     # a straight line to target
-    path1 = np.sin(np.arange(0, 2*np.pi, .01)*5)
+    path1 = np.sin(np.arange(0, 2 * np.pi, 0.01) * 5)
     # a strange path to target
     path2 = np.zeros(path1.shape)
-    path2[int(len(path2) / 2.):] = .5
+    path2[int(len(path2) / 2.0) :] = 0.5
 
     for ii, bfs in enumerate(n_bfs):
         dmp = DMPs_rhythmic(n_dmps=2, n_bfs=bfs)
@@ -146,17 +146,17 @@ if __name__ == "__main__":
         plt.plot(y_track[:, 1], lw=2)
 
     plt.subplot(211)
-    a = plt.plot(path1, 'r--', lw=2)
-    plt.title('DMP imitate path')
-    plt.xlabel('time (ms)')
-    plt.ylabel('system trajectory')
-    plt.legend([a[0]], ['desired path'], loc='lower right')
+    a = plt.plot(path1, "r--", lw=2)
+    plt.title("DMP imitate path")
+    plt.xlabel("time (ms)")
+    plt.ylabel("system trajectory")
+    plt.legend([a[0]], ["desired path"], loc="lower right")
     plt.subplot(212)
-    b = plt.plot(path2, 'r--', lw=2)
-    plt.title('DMP imitate path')
-    plt.xlabel('time (ms)')
-    plt.ylabel('system trajectory')
-    plt.legend(['%i BFs' % i for i in n_bfs], loc='lower right')
+    b = plt.plot(path2, "r--", lw=2)
+    plt.title("DMP imitate path")
+    plt.xlabel("time (ms)")
+    plt.ylabel("system trajectory")
+    plt.legend(["%i BFs" % i for i in n_bfs], loc="lower right")
 
     plt.tight_layout()
     plt.show()

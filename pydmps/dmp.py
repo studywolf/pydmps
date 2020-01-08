@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (C) 2013 Travis DeWolf
 
 This program is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 import numpy as np
 
 from pydmps.cs import CanonicalSystem
@@ -23,9 +23,9 @@ class DMPs(object):
     """Implementation of Dynamic Motor Primitives,
     as described in Dr. Stefan Schaal's (2002) paper."""
 
-    def __init__(self, n_dmps, n_bfs, dt=.01,
-                 y0=0, goal=1, w=None,
-                 ay=None, by=None, **kwargs):
+    def __init__(
+        self, n_dmps, n_bfs, dt=0.01, y0=0, goal=1, w=None, ay=None, by=None, **kwargs
+    ):
         """
         n_dmps int: number of dynamic motor primitives
         n_bfs int: number of basis functions per DMP
@@ -41,18 +41,18 @@ class DMPs(object):
         self.n_bfs = n_bfs
         self.dt = dt
         if isinstance(y0, (int, float)):
-            y0 = np.ones(self.n_dmps)*y0
+            y0 = np.ones(self.n_dmps) * y0
         self.y0 = y0
         if isinstance(goal, (int, float)):
-            goal = np.ones(self.n_dmps)*goal
+            goal = np.ones(self.n_dmps) * goal
         self.goal = goal
         if w is None:
             # default is f = 0
             w = np.zeros((self.n_dmps, self.n_bfs))
         self.w = w
 
-        self.ay = np.ones(n_dmps) * 25. if ay is None else ay  # Schaal 2012
-        self.by = self.ay / 4. if by is None else by  # Schaal 2012
+        self.ay = np.ones(n_dmps) * 25.0 if ay is None else ay  # Schaal 2012
+        self.by = self.ay / 4.0 if by is None else by  # Schaal 2012
 
         # set up the CS
         self.cs = CanonicalSystem(dt=self.dt, **kwargs)
@@ -66,7 +66,7 @@ class DMPs(object):
         if they are, offset slightly so that the forcing term is not 0"""
 
         for d in range(self.n_dmps):
-            if (self.y0[d] == self.goal[d]):
+            if abs(self.y0[d] - self.goal[d]) < 1e-4:
                 self.goal[d] += 1e-4
 
     def gen_front_term(self, x, dmp_num):
@@ -96,10 +96,11 @@ class DMPs(object):
         self.y_des = y_des.copy()
         self.goal = self.gen_goal(y_des)
 
-        self.check_offset()
+        # self.check_offset()
 
         # generate function to interpolate the desired trajectory
         import scipy.interpolate
+
         path = np.zeros((self.n_dmps, self.timesteps))
         x = np.linspace(0, self.cs.run_time, y_des.shape[1])
         for d in range(self.n_dmps):
@@ -108,22 +109,18 @@ class DMPs(object):
                 path[d, t] = path_gen(t * self.dt)
         y_des = path
 
-        # calculate velocity of y_des
-        dy_des = np.diff(y_des) / self.dt
-        # add zero to the beginning of every row
-        dy_des = np.hstack((np.zeros((self.n_dmps, 1)), dy_des))
+        # calculate velocity of y_des with central differences
+        dy_des = np.gradient(y_des, axis=1) / self.dt
 
-        # calculate acceleration of y_des
-        ddy_des = np.diff(dy_des) / self.dt
-        # add zero to the beginning of every row
-        ddy_des = np.hstack((np.zeros((self.n_dmps, 1)), ddy_des))
+        # calculate acceleration of y_des with central differences
+        ddy_des = np.gradient(dy_des, axis=1) / self.dt
 
         f_target = np.zeros((y_des.shape[1], self.n_dmps))
         # find the force required to move along this trajectory
         for d in range(self.n_dmps):
-            f_target[:, d] = (ddy_des[d] - self.ay[d] *
-                              (self.by[d] * (self.goal[d] - y_des[d]) -
-                              dy_des[d]))
+            f_target[:, d] = ddy_des[d] - self.ay[d] * (
+                self.by[d] * (self.goal[d] - y_des[d]) - dy_des[d]
+            )
 
         # efficiently generate weights to realize f_target
         self.gen_weights(f_target)
@@ -131,18 +128,26 @@ class DMPs(object):
         if plot is True:
             # plot the basis function activations
             import matplotlib.pyplot as plt
+
             plt.figure()
             plt.subplot(211)
             psi_track = self.gen_psi(self.cs.rollout())
             plt.plot(psi_track)
-            plt.title('basis functions')
+            plt.title("basis functions")
 
             # plot the desired forcing function vs approx
-            plt.subplot(212)
-            plt.plot(f_target[:,0])
-            plt.plot(np.sum(psi_track * self.w[0], axis=1) * self.dt)
-            plt.legend(['f_target', 'w*psi'])
-            plt.title('DMP forcing function')
+            for ii in range(self.n_dmps):
+                plt.subplot(2, self.n_dmps, self.n_dmps + 1 + ii)
+                plt.plot(f_target[:, ii], "--", label="f_target %i" % ii)
+            for ii in range(self.n_dmps):
+                plt.subplot(2, self.n_dmps, self.n_dmps + 1 + ii)
+                print("w shape: ", self.w.shape)
+                plt.plot(
+                    np.sum(psi_track * self.w[ii], axis=1) * self.dt,
+                    label="w*psi %i" % ii,
+                )
+                plt.legend()
+            plt.title("DMP forcing function")
             plt.tight_layout()
             plt.show()
 
@@ -155,8 +160,8 @@ class DMPs(object):
         self.reset_state()
 
         if timesteps is None:
-            if 'tau' in kwargs:
-                timesteps = int(self.timesteps / kwargs['tau'])
+            if "tau" in kwargs:
+                timesteps = int(self.timesteps / kwargs["tau"])
             else:
                 timesteps = self.timesteps
 
@@ -197,16 +202,15 @@ class DMPs(object):
         for d in range(self.n_dmps):
 
             # generate the forcing term
-            f = (self.gen_front_term(x, d) *
-                 (np.dot(psi, self.w[d])) / np.sum(psi))
+            f = self.gen_front_term(x, d) * (np.dot(psi, self.w[d])) / np.sum(psi)
 
             # DMP acceleration
-            self.ddy[d] = (self.ay[d] *
-                           (self.by[d] * (self.goal[d] - self.y[d]) -
-                           self.dy[d]/tau) + f) * tau
+            self.ddy[d] = (
+                self.ay[d] * (self.by[d] * (self.goal[d] - self.y[d]) - self.dy[d]) + f
+            )
             if external_force is not None:
                 self.ddy[d] += external_force[d]
             self.dy[d] += self.ddy[d] * tau * self.dt * error_coupling
-            self.y[d] += self.dy[d] * self.dt * error_coupling
+            self.y[d] += self.dy[d] * tau * self.dt * error_coupling
 
         return self.y, self.dy, self.ddy

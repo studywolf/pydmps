@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (C) 2013 Travis DeWolf
 
 This program is free software: you can redistribute it and/or modify
@@ -13,15 +13,16 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
 import numpy as np
 
-class CanonicalSystem():
+
+class CanonicalSystem:
     """Implementation of the canonical dynamical system
     as described in Dr. Stefan Schaal's (2002) paper"""
 
-    def __init__(self, dt, ax=1.0, pattern='discrete'):
+    def __init__(self, dt, ax=1.0, pattern="discrete"):
         """Default values from Schaal (2012)
 
         dt float: the timestep
@@ -31,15 +32,17 @@ class CanonicalSystem():
         self.ax = ax
 
         self.pattern = pattern
-        if pattern == 'discrete':
+        if pattern == "discrete":
             self.step = self.step_discrete
             self.run_time = 1.0
-        elif pattern == 'rhythmic':
+        elif pattern == "rhythmic":
             self.step = self.step_rhythmic
-            self.run_time = 2*np.pi
+            self.run_time = 2 * np.pi
         else:
-            raise Exception('Invalid pattern type specified: \
-                Please specify rhythmic or discrete.')
+            raise Exception(
+                "Invalid pattern type specified: \
+                Please specify rhythmic or discrete."
+            )
 
         self.dt = dt
         self.timesteps = int(self.run_time / self.dt)
@@ -49,8 +52,8 @@ class CanonicalSystem():
     def rollout(self, **kwargs):
         """Generate x for open loop movements.
         """
-        if 'tau' in kwargs:
-            timesteps = int(self.timesteps / kwargs['tau'])
+        if "tau" in kwargs:
+            timesteps = int(self.timesteps / kwargs["tau"])
         else:
             timesteps = self.timesteps
         self.x_track = np.zeros(timesteps)
@@ -91,18 +94,18 @@ class CanonicalSystem():
         return self.x
 
 
-#==============================
+# ==============================
 # Test code
-#==============================
+# ==============================
 if __name__ == "__main__":
 
-    cs = CanonicalSystem(dt=.001, pattern='discrete')
+    cs = CanonicalSystem(dt=0.001, pattern="discrete")
     # test normal rollout
     x_track1 = cs.rollout()
 
     cs.reset_state()
     # test error coupling
-    timesteps = int(1.0/.001)
+    timesteps = int(1.0 / 0.001)
     x_track2 = np.zeros(timesteps)
     err = np.zeros(timesteps)
     err[200:400] = 2
@@ -111,34 +114,36 @@ if __name__ == "__main__":
         x_track2[i] = cs.step(error_coupling=err_coup[i])
 
     import matplotlib.pyplot as plt
-    fig, ax1 = plt.subplots(figsize=(6,3))
+
+    fig, ax1 = plt.subplots(figsize=(6, 3))
     ax1.plot(x_track1, lw=2)
     ax1.plot(x_track2, lw=2)
     plt.grid()
-    plt.legend(['normal rollout', 'error coupling'])
+    plt.legend(["normal rollout", "error coupling"])
     ax2 = ax1.twinx()
-    ax2.plot(err, 'r-', lw=2)
-    plt.legend(['error'], loc='lower right')
+    ax2.plot(err, "r-", lw=2)
+    plt.legend(["error"], loc="lower right")
     plt.ylim(0, 3.5)
-    plt.xlabel('time (s)')
-    plt.ylabel('x')
-    plt.title('Canonical system - discrete')
+    plt.xlabel("time (s)")
+    plt.ylabel("x")
+    plt.title("Canonical system - discrete")
 
     for t1 in ax2.get_yticklabels():
-        t1.set_color('r')
+        t1.set_color("r")
 
     plt.tight_layout()
 
-    cs = CanonicalSystem(dt=.001, pattern='rhythmic')
+    cs = CanonicalSystem(dt=0.001, pattern="rhythmic")
     # test normal rollout
     x_track1 = cs.rollout()
 
     import matplotlib.pyplot as plt
-    fig, ax1 = plt.subplots(figsize=(6,3))
+
+    fig, ax1 = plt.subplots(figsize=(6, 3))
     ax1.plot(x_track1, lw=2)
     plt.grid()
-    plt.legend(['normal rollout'], loc='lower right')
-    plt.xlabel('time (s)')
-    plt.ylabel('x')
-    plt.title('Canonical system - rhythmic')
+    plt.legend(["normal rollout"], loc="lower right")
+    plt.xlabel("time (s)")
+    plt.ylabel("x")
+    plt.title("Canonical system - rhythmic")
     plt.show()
